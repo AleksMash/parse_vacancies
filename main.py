@@ -31,7 +31,7 @@ def predict_rub_salary_hh(vacancy):
     return predict_salary(start, end)
 
 
-def predict_rub_salary_superJob(vacancy):
+def predict_rub_salary_superjob(vacancy):
     currency = vacancy['currency']
     if not currency or currency != 'rub':
         return None
@@ -72,8 +72,7 @@ def parse_hh():
         avg_salary = fmean(salaries_not_none) if salaries_not_none else 0
         table_output.append([lang, vacancies_per_page['found'],
                          len(salaries_not_none), f'{int(avg_salary):_} руб.'.replace('_', ' ')])
-    table = AsciiTable(table_output, 'HeadHunter Moscow')
-    print(table.table)
+    return AsciiTable(table_output, 'HeadHunter Moscow')
 
 
 def parse_superjob():
@@ -109,11 +108,10 @@ def parse_superjob():
         avg_salary = fmean(salaries_not_none) if salaries_not_none else 0
         table_output.append([lang, vacancies_per_page['total'],
                            len(salaries_not_none), f'{int(avg_salary):_} руб.'.replace('_', ' ')])
-    table = AsciiTable(table_output, 'SuperJob Moscow')
-    print(table.table)
+    return AsciiTable(table_output, 'SuperJob Moscow')
 
 
 if __name__=='__main__':
-    parse_hh()
+    print(parse_hh().table)
     print()
-    parse_superjob()
+    print(parse_superjob().table)
