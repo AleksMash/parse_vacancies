@@ -75,11 +75,9 @@ def parse_hh():
     return AsciiTable(table_output, 'HeadHunter Moscow')
 
 
-def parse_superjob():
-    load_dotenv()
-    TOKEN_SJ = getenv('TOKEN_SUPERJOB')
+def parse_superjob(token):
     base_url = 'https://api.superjob.ru/2.0/vacancies/'
-    headers = {'X-Api-App-Id': TOKEN_SJ}
+    headers = {'X-Api-App-Id': token}
     table_output = [
         ['Язык', 'Вкансий найдено', 'Вакансий обработано', 'Средняя зарплата'],
     ]
@@ -103,7 +101,7 @@ def parse_superjob():
                 page += 1
             else:
                 break
-        salaries = list(map(predict_rub_salary_superJob, all_vacancies))
+        salaries = list(map(predict_rub_salary_superjob, all_vacancies))
         salaries_not_none = list(filter(lambda x: x, salaries))
         avg_salary = fmean(salaries_not_none) if salaries_not_none else 0
         table_output.append([lang, vacancies_per_page['total'],
@@ -112,6 +110,7 @@ def parse_superjob():
 
 
 if __name__=='__main__':
+    load_dotenv()
     print(parse_hh().table)
     print()
-    print(parse_superjob().table)
+    print(parse_superjob(getenv('TOKEN_SUPERJOB')).table)
