@@ -8,6 +8,11 @@ from terminaltables import AsciiTable
 
 
 POPULAR_LANGS = ['Python', 'JavaScript', 'Java']
+HH_PROF_AREA=1
+HH_PROF_ROLE=96
+PER_PAGE_LIMIT=100
+SJ_MOSCOW_ID=4
+
 
 def predict_salary(salary_from, salary_to):
     if salary_from:
@@ -40,8 +45,7 @@ def predict_rub_salary_superJob(vacancy):
 
 
 def parse_hh():
-    base_url = 'https://api.hh.ru/'
-    page_url = 'vacancies'
+    base_url = 'https://api.hh.ru/vacancies'
     headers = {
         'User-Agent': 'MyApp',
     }
@@ -49,44 +53,29 @@ def parse_hh():
         ['Язык', 'Вкансий найдено', 'Вакансий обработано', 'Средняя зарплата'],
     ]
     for lang in POPULAR_LANGS:
-        per_page = 100
-        page, max_page = 0, 0
+        page, max_page = 0, 1
         all_vacancies=[]
-        params = {
-            'area': 1,
-            'professional_role': 96,
-            'text': lang,
-            'search_field': ['name', 'description'],
-            'only_with_salary': True,
-            'page': page,
-            'per_page': per_page
-        }
-        response = requests.get(url_parse.urljoin(base_url, page_url), params=params, headers=headers)
-        vacancies_per_page = response.json()
-        all_vacancies.extend(vacancies_per_page['items'])
-        found = vacancies_per_page['found']
-        if vacancies_per_page['found']>100:
+        while page < max_page:
+            params = {
+                'area': HH_PROF_AREA,
+                'professional_role': HH_PROF_ROLE,
+                'text': lang,
+                'search_field': ['name', 'description'],
+                'only_with_salary': True,
+                'page': page,
+                'per_page': PER_PAGE_LIMIT
+            }
+            response = requests.get(base_url, params=params, headers=headers)
+            response.raise_for_status()
+            vacancies_per_page = response.json()
+            all_vacancies.extend(vacancies_per_page['items'])
+            max_page = vacancies_per_page['pages']
             page += 1
-            max_page = found // per_page - (0 if found % 100 else 1)
-            while page<=max_page:
-                params = {
-                    'area': 1,
-                    'professional_role': 96,
-                    'text': lang,
-                    'search_field': ['name', 'description'],
-                    'only_with_salary': True,
-                    'page': page,
-                    'per_page': per_page
-                }
-                response = requests.get(url_parse.urljoin(base_url, page_url), params=params, headers=headers)
-                vacancies_per_page = response.json()
-                all_vacancies.extend(vacancies_per_page['items'])
-                page += 1
         salaries = list(map(predict_rub_salary_hh, all_vacancies))
         salaries_not_none = list(filter(lambda x: x, salaries))
-        avg_salary = fmean(salaries_not_none)
+        avg_salary = fmean(salaries_not_none) if salaries_not_none else 0
         table_output.append([lang, vacancies_per_page['found'],
-                           len(salaries_not_none), f'{int(avg_salary):_} руб.'.replace('_', ' ')])
+                         len(salaries_not_none), f'{int(avg_salary):_} руб.'.replace('_', ' ')])
     table = AsciiTable(table_output, 'HeadHunter Moscow')
     print(table.table)
 
@@ -100,17 +89,16 @@ def parse_superjob():
         ['Язык', 'Вкансий найдено', 'Вакансий обработано', 'Средняя зарплата'],
     ]
     for lang in POPULAR_LANGS:
-        per_page = 100
         page, max_page = 0, 1
         all_vacancies=[]
         while True:
             params = {
-                'town': 4,
+                'town': SJ_MOSCOW_ID,
                 'keywords[0][srws]': 1,
                 'keywords[0][keys]': 'программист',
                 'keyword': lang,
                 'page': page,
-                'count': per_page
+                'count': PER_PAGE_LIMIT
             }
             response = requests.get(base_url, headers=headers, params=params)
             response.raise_for_status()
