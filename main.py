@@ -1,13 +1,13 @@
 from os import getenv
 from statistics import fmean
-import urllib.parse as p
+import urllib.parse as url_parse
 
 import requests
 from dotenv import load_dotenv
 from terminaltables import AsciiTable
 
 
-POPULAR_LANG = ['Python', 'JavaScript', 'Java']
+POPULAR_LANGS = ['Python', 'JavaScript', 'Java']
 
 def predict_salary(salary_from, salary_to):
     if salary_from:
@@ -45,10 +45,10 @@ def parse_hh():
     headers = {
         'User-Agent': 'MyApp',
     }
-    table_data = [
+    table_output = [
         ['Язык', 'Вкансий найдено', 'Вакансий обработано', 'Средняя зарплата'],
     ]
-    for lang in POPULAR_LANG:
+    for lang in POPULAR_LANGS:
         per_page = 100
         page, max_page = 0, 0
         all_vacancies=[]
@@ -61,7 +61,7 @@ def parse_hh():
             'page': page,
             'per_page': per_page
         }
-        response = requests.get(p.urljoin(base_url, page_url), params=params, headers=headers)
+        response = requests.get(url_parse.urljoin(base_url, page_url), params=params, headers=headers)
         vacancies_per_page = response.json()
         all_vacancies.extend(vacancies_per_page['items'])
         found = vacancies_per_page['found']
@@ -78,16 +78,16 @@ def parse_hh():
                     'page': page,
                     'per_page': per_page
                 }
-                response = requests.get(p.urljoin(base_url, page_url), params=params, headers=headers)
+                response = requests.get(url_parse.urljoin(base_url, page_url), params=params, headers=headers)
                 vacancies_per_page = response.json()
                 all_vacancies.extend(vacancies_per_page['items'])
                 page += 1
         salaries = list(map(predict_rub_salary_hh, all_vacancies))
         salaries_not_none = list(filter(lambda x: x, salaries))
         avg_salary = fmean(salaries_not_none)
-        table_data.append([lang, vacancies_per_page['found'],
+        table_output.append([lang, vacancies_per_page['found'],
                            len(salaries_not_none), f'{int(avg_salary):_} руб.'.replace('_', ' ')])
-    table = AsciiTable(table_data, 'HeadHunter Moscow')
+    table = AsciiTable(table_output, 'HeadHunter Moscow')
     print(table.table)
 
 
@@ -96,10 +96,10 @@ def parse_superjob():
     TOKEN_SJ = getenv('TOKEN_SUPERJOB')
     base_url = 'https://api.superjob.ru/2.0/vacancies/'
     headers = {'X-Api-App-Id': TOKEN_SJ}
-    table_data = [
+    table_output = [
         ['Язык', 'Вкансий найдено', 'Вакансий обработано', 'Средняя зарплата'],
     ]
-    for lang in POPULAR_LANG:
+    for lang in POPULAR_LANGS:
         per_page = 100
         page, max_page = 0, 1
         all_vacancies=[]
@@ -123,9 +123,9 @@ def parse_superjob():
         salaries = list(map(predict_rub_salary_superJob, all_vacancies))
         salaries_not_none = list(filter(lambda x: x, salaries))
         avg_salary = fmean(salaries_not_none) if salaries_not_none else 0
-        table_data.append([lang, vacancies_per_page['total'],
+        table_output.append([lang, vacancies_per_page['total'],
                            len(salaries_not_none), f'{int(avg_salary):_} руб.'.replace('_', ' ')])
-    table = AsciiTable(table_data, 'SuperJob Moscow')
+    table = AsciiTable(table_output, 'SuperJob Moscow')
     print(table.table)
 
 
